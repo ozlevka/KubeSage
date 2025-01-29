@@ -52,7 +52,7 @@ spec:
     - protocol: "TCP"
       port: 6000      # External port
       targetPort: 5000  # Port inside the container
-  type: LoadBalancer  # Change from LoadBalancer to NodePort
+  type: LoadBalancer
 
 ---
 # ==============================
