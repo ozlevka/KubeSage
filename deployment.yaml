@@ -1,34 +1,82 @@
+# ==============================
+# Service Account for the Pod
+# ==============================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubesage-sa
+  namespace: default
+
+---
+# ==============================
+# RBAC - ClusterRole to Allow Access to Nodes
+# ==============================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubesage-role
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+
+---
+# ==============================
+# ClusterRoleBinding - Link Role to ServiceAccount
+# ==============================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubesage-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: kubesage-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: kubesage-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ==============================
+# Service - Expose the Application
+# ==============================
 apiVersion: v1
 kind: Service
 metadata:
-  name: hello-python-service
+  name: kube-sage-service
 spec:
   selector:
-    app: hello-python
+    app: kube-sage
   ports:
-  - protocol: "TCP"
-    port: 6000
-    targetPort: 5000
-  type: LoadBalancer
+    - protocol: "TCP"
+      port: 6000      # External port
+      targetPort: 5000  # Port inside the container
+  type: LoadBalancer  # Change from LoadBalancer to NodePort
 
 ---
+# ==============================
+# Deployment - Run the Application
+# ==============================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-python
+  name: kube-sage
 spec:
   selector:
     matchLabels:
-      app: hello-python
+      app: kube-sage
   replicas: 1
   template:
     metadata:
       labels:
-        app: hello-python
+        app: kube-sage
     spec:
+      serviceAccountName: kubesage-sa  # 🔥 Use the custom ServiceAccount
       containers:
-      - name: hello-python
-        image: hello-python:latest
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 5000
+        - name: kube-sage
+          image: kube-sage:latest
+          imagePullPolicy: Never
+          command: ["/bin/sh", "-c", "while true; do sleep 30; done"]  # 🔥 Keeps the pod running
+          ports:
+            - containerPort: 5000
