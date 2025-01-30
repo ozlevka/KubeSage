@@ -11,21 +11,6 @@ def load_kube_config():
     else:
         config.load_kube_config()
 
-@app.get("/debug")
-def debug_k8s():
-    """Debug Kubernetes API Connection"""
-    try:
-        load_kube_config()
-        v1 = client.CoreV1Api()
-        nodes = v1.list_node()
-        return {
-            "status": "success",
-            "nodes": [node.metadata.name for node in nodes.items],
-            "env": dict(os.environ),  # Print env variables
-        }
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
 # Kubernetes Health Check API
 @app.get("/health")
 def check_cluster_health():
@@ -39,7 +24,7 @@ def check_cluster_health():
         return {"status": "error", "message": str(e)}
 
 
-# ✅ Get List of Pods
+# Get List of Pods
 @app.get("/pods")
 def get_pods():
     """Fetch all Kubernetes pods in the cluster."""
@@ -52,7 +37,7 @@ def get_pods():
     except Exception as e:
         return {"error": str(e)}
 
-# ✅ Get List of Services
+# Get List of Services
 @app.get("/services")
 def get_services():
     """Fetch all Kubernetes services."""
@@ -64,7 +49,7 @@ def get_services():
     except Exception as e:
         return {"error": str(e)}
 
-# ✅ Get List of Deployments
+# Get List of Deployments
 @app.get("/deployments")
 def get_deployments():
     """Fetch all Kubernetes deployments."""
