@@ -11,6 +11,20 @@ def load_kube_config():
     else:
         config.load_kube_config()
 
+@app.get("/debug")
+def debug_k8s():
+    """Debug Kubernetes API Connection"""
+    try:
+        load_kube_config()
+        v1 = client.CoreV1Api()
+        nodes = v1.list_node()
+        return {
+            "status": "success",
+            "nodes": [node.metadata.name for node in nodes.items],
+            "env": dict(os.environ),  # Print env variables
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # Kubernetes Health Check API
 @app.get("/health")
@@ -30,8 +44,10 @@ def check_cluster_health():
 def get_pods():
     """Fetch all Kubernetes pods in the cluster."""
     try:
+        load_kube_config()
         v1 = client.CoreV1Api()
         pods = v1.list_pod_for_all_namespaces()
+
         return {"pods": [{"name": pod.metadata.name, "namespace": pod.metadata.namespace, "status": pod.status.phase} for pod in pods.items]}
     except Exception as e:
         return {"error": str(e)}
@@ -41,6 +57,7 @@ def get_pods():
 def get_services():
     """Fetch all Kubernetes services."""
     try:
+        load_kube_config()
         v1 = client.CoreV1Api()
         services = v1.list_service_for_all_namespaces()
         return {"services": [{"name": svc.metadata.name, "namespace": svc.metadata.namespace} for svc in services.items]}
@@ -52,6 +69,7 @@ def get_services():
 def get_deployments():
     """Fetch all Kubernetes deployments."""
     try:
+        load_kube_config()
         apps_v1 = client.AppsV1Api()
         deployments = apps_v1.list_deployment_for_all_namespaces()
         return {"deployments": [{"name": dep.metadata.name, "namespace": dep.metadata.namespace} for dep in deployments.items]}

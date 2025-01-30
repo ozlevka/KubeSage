@@ -1,9 +1,8 @@
-FROM python:3.11
+FROM python:3.9
 
-RUN mkdir /app
 WORKDIR /app
-ADD . /app/
-RUN pip install -r requirements.txt
+COPY . /app
 
-EXPOSE 5000
-CMD ["python", "/app/cli/main.py", "check-health"]
+RUN pip install --no-cache-dir fastapi uvicorn kubernetes
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
