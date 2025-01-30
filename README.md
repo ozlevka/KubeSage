@@ -1,142 +1,184 @@
-# KubeSage  
+# KubeSage: AI-Powered Kubernetes Troubleshooting Assistant
 
-![KubeSage](https://img.shields.io/badge/Kubernetes-Troubleshooting-blue.svg)  
-![License](https://img.shields.io/badge/license-MIT-green.svg)  
-![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)  
+![KubeSage](https://your-logo-url-here.com) *(Replace with actual project logo if available)*
 
-KubeSage is an AI-powered troubleshooting and compliance auditing tool for Kubernetes environments. It helps DevOps and SRE teams detect misconfigurations, performance bottlenecks, and security risks while providing guided remediations.  
+ **KubeSage** is an **AI-driven Kubernetes troubleshooting assistant** that integrates **LangChain Agents** with Kubernetes APIs. It provides **real-time diagnostics, resource monitoring, and troubleshooting recommendations** for Kubernetes clusters using OpenAI's **GPT-4o**.
 
 ---
 
-## 🚀 Features  
-
-- **AI-Powered Troubleshooting**: Uses LLMs to analyze Kubernetes logs and configurations.  
-- **Compliance Auditing**: Maps security controls to frameworks like FedRAMP, ISO, and SOC2.  
-- **Cluster Risk Analysis**: Scans Kubernetes clusters and workloads for vulnerabilities.  
-- **Intelligent Remediation**: Provides fix suggestions based on historical data and best practices.  
-- **Interactive Chatbot**: Ask troubleshooting queries via a CLI or web UI.  
-
----
-
-## 🏗 Installation  
-
-### Prerequisites  
-
-- Kubernetes cluster (Minikube, AKS, EKS, GKE, etc.)  
-- Helm  
-- Docker  
-- Python 3.8+  
-- OpenAI API Key (Optional, for AI-powered insights)  
-
-### Steps  
-
-1. Clone the repository:  
-
-   ```sh
-   git clone https://github.com/yourusername/kubesage.git
-   cd kubesage
-   ```
-
-2. Deploy using Helm:  
-
-   ```sh
-   helm install kubesage ./deploy/helm
-   ```
-
-3. Start the interactive troubleshooting chatbot:  
-
-   ```sh
-   python cli.py
-   ```
+##  Table of Contents
+- [Features](#-features)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Available Tools](#-available-tools)
+- [Architecture](#️-architecture)
+- [WebSocket Integration](#-websocket-integration)
+- [Troubleshooting](#-troubleshooting)
+- [License](#-license)
 
 ---
 
-## 📖 Usage  
+## Features
+✅ AI-powered **Kubernetes troubleshooting**  
+✅ **LangChain Agents** for intelligent decision-making  
+✅ Real-time **Kubernetes monitoring** (Pods, Deployments, Services, Nodes)  
+✅ **Deep dive diagnostics** (logs, resource usage, RBAC, etc.)  
+✅ **WebSocket interface** for interactive debugging  
+✅ **Secure** authentication using OpenAI API keys  
 
-- **Check cluster health:**  
-  ```sh
-  python cli.py --check-health
-  ```  
+---
 
-- **Analyze logs for failures:**  
-  ```sh
-  python cli.py --analyze-logs --namespace=default
+## Installation
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/your-username/KubeSage.git
+cd KubeSage
+```
+
+### 2️⃣ Set Up Virtual Environment
+```bash
+conda create -n kube-sage python=3.9 -y
+conda activate kube-sage
+```
+
+### 3️⃣ Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4️⃣ Configure Kubernetes Access
+Ensure your Kubernetes cluster is accessible:
+- **Inside Cluster:** Automatically loads service account credentials.  
+- **Outside Cluster:** Set up `KUBECONFIG`:
+  ```bash
+  export KUBECONFIG=$HOME/.kube/config
   ```
 
-- **List compliance violations:**  
-  ```sh
-  python cli.py --compliance-check
-  ```
+### 5️⃣ Run the WebSocket API
+```bash
+python src/main.py
+```
 
 ---
 
-## 🛠️ Configuration  
+## Usage
+### Start WebSocket Connection
+Use **`wscat`** or a WebSocket client:
+```bash
+wscat -c ws://localhost:6000/ws
+```
+You can then start **chatting with the AI assistant**.
 
-Modify `config.yaml` to customize scanning rules and compliance frameworks.  
+---
 
+## Available Tools
+### Broad Insights (Cluster Overview)
+| Tool | Description |
+|------|------------|
+| `Get All Pods with Resource Usage` | Lists all pods with CPU & memory usage. |
+| `Get All Services` | Lists all services and their types/ports. |
+| `Get All Deployments` | Fetches deployment details. |
+| `Get All Nodes` | Lists nodes with health & capacity. |
+| `Get Cluster Events` | Shows recent warnings & failures. |
+| `Get Namespace List` | Fetches all Kubernetes namespaces. |
+
+### Deep Dive (Detailed Diagnostics)
+| Tool | Description |
+|------|------------|
+| `Describe Pod with Restart Count` | Fetches pod details + restart count. |
+| `Get Pod Logs` | Retrieves last 10 log lines for a pod. |
+| `Describe Service` | Gets details of a Kubernetes service. |
+| `Describe Deployment` | Fetches deployment details (replica count, images). |
+| `Check RBAC Events & Role Bindings` | Analyzes security permissions. |
+| `Get Ingress Resources` | Lists ingress rules, hosts & annotations. |
+| `Check Pod Affinity & Anti-Affinity` | Analyzes scheduling constraints. |
+
+---
+
+## Architecture
+![Architecture Diagram](https://your-diagram-url-here.com) *(Replace with actual architecture diagram if available)*
+
+### Components
+1️⃣ **FastAPI WebSocket Server** - Handles real-time interactions.  
+2️⃣ **LangChain Agent** - Uses OpenAI GPT-4o to select appropriate tools.  
+3️⃣ **Kubernetes API Client** - Fetches cluster insights and diagnostics.  
+4️⃣ **RBAC & Authentication** - Secure access to cluster resources.  
+
+---
+
+## WebSocket Integration
+KubeSage uses **WebSockets** for real-time AI troubleshooting.
+
+### Connecting to the WebSocket
+Example connection using **Python WebSockets**:
+```python
+import websockets
+import asyncio
+
+async def connect():
+    uri = "ws://localhost:6000/ws"
+    async with websockets.connect(uri) as websocket:
+        await websocket.send("Describe Pod with Restart Count")
+        response = await websocket.recv()
+        print(f"Response: {response}")
+
+asyncio.run(connect())
+```
+
+---
+
+## Troubleshooting
+### 1️⃣ WebSocket Error: `Connection Refused`
+✅ Ensure **WebSocket server is running**:
+```bash
+python src/main.py
+```
+
+### 2️⃣ Kubernetes API `403 Forbidden`
+✅ Verify **RBAC permissions**:
+```bash
+kubectl auth can-i get pods --as=system:serviceaccount:default:kubesage-sa
+```
+If denied, apply:
 ```yaml
-scan_interval: 5m
-enable_ai_suggestions: true
-compliance_frameworks:
-  - FedRAMP
-  - ISO27001
-  - SOC2
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metrics-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: kubesage-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: metrics-reader
+  apiGroup: rbac.authorization.k8s.io
+```
+
+### 3️⃣ Metrics API `404 Not Found`
+✅ **Enable Metrics Server:**
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
 
 ---
 
-## 🛡️ Security  
-
-- Uses Role-Based Access Control (RBAC) to manage permissions.  
-- Does not modify Kubernetes resources unless explicitly allowed.  
-
----
-
-## 📜 License  
-
-This project is licensed under the **MIT License**, a permissive open-source license that allows anyone to use, modify, and distribute the software with minimal restrictions.  
-
-### Why MIT License?  
-
-- **Freedom to Use**: Anyone can use, modify, and distribute the software.  
-- **Permissive & Business-Friendly**: Allows commercial and private use without restrictions.  
-- **Minimal Liability**: Protects contributors from legal claims.  
-- **Broad Adoption**: The most widely used open-source license, making it easier for others to contribute.  
-
-Full MIT License text:  
-
-```text
-MIT License  
-
-Copyright (c) 2025 Your Name  
-
-Permission is hereby granted, free of charge, to any person obtaining a copy  
-of this software and associated documentation files (the "Software"), to deal  
-in the Software without restriction, including without limitation the rights  
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell  
-copies of the Software, and to permit persons to whom the Software is  
-furnished to do so, subject to the following conditions:  
-
-The above copyright notice and this permission notice shall be included in all  
-copies or substantial portions of the Software.  
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR  
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE  
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER  
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  
-SOFTWARE.
-```
+## License
+**MIT License** - Free to use, modify, and distribute.  
+**Contributions welcome!**
 
 ---
 
-## 🤝 Contributing  
+## Next Steps
+**To-Do List**
+- [ ] Add Prometheus/Grafana integration for advanced monitoring  
+- [ ] Support multi-cluster troubleshooting  
+- [ ] Add more AI-powered insights  
 
-Contributions are welcome! Open an issue or submit a pull request to improve KubeSage.  
+**Want to contribute?** Open a PR! 
 
 ---
 
-## 📧 Contact  
+## Acknowledgments
+Thanks to **Kubernetes, FastAPI, LangChain, and OpenAI** for making AI-driven DevOps possible!
 
-For questions, reach out to **adeeshdevanand@gmail.com** or visit the GitHub repository.  

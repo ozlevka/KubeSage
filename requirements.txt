@@ -1,4 +1,7 @@
 click
-kubernetes
-FastAPI
+kubernetes~=32.0.0
+FastAPI~=0.115.7
 uvicorn[standard]
+langchain~=0.3.16
+langchain-openai~=0.3.2
+openai~=1.60.2
