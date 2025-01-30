@@ -38,6 +38,6 @@ async def websocket_handler(websocket: WebSocket):
                 continue
 
         response = process_query(query)
-        await websocket.send_text(str(response))
+        await websocket.send_text(str(response.get('output')))
 
     await websocket.close()
