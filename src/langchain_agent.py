@@ -108,7 +108,8 @@ def set_openai_key(api_key: str) -> None:
         agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
         verbose=True,
         memory=memory,
-        prompt=prompt_template
+        prompt=prompt_template,
+        handle_parsing_errors=True
     )
 
 def process_query(user_query: str):
