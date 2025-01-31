@@ -1,6 +1,6 @@
 # KubeSage: AI-Powered Kubernetes Troubleshooting Assistant
 
-![KubeSage](https://your-logo-url-here.com) *(Replace with actual project logo if available)*
+![KubeSage](https://github.com/Adeesh-Devanand/KubeSage/blob/main/KubeSage.png?raw=true)
 
  **KubeSage** is an **AI-driven Kubernetes troubleshooting assistant** that integrates **LangChain Agents** with Kubernetes APIs. It provides **real-time diagnostics, resource monitoring, and troubleshooting recommendations** for Kubernetes clusters using OpenAI's **GPT-4o**.
 
