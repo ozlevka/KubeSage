@@ -1,0 +1,84 @@
+# ==============================
+# Service Account for the Pod
+# ==============================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubesage-sa
+  namespace: default
+
+---
+# ==============================
+# RBAC - ClusterRole to Allow Access to Resources
+# ==============================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubesage-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+
+---
+# ==============================
+# ClusterRoleBinding - Link Role to ServiceAccount
+# ==============================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubesage-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: kubesage-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: kubesage-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ==============================
+# Service - Expose the Application
+# ==============================
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-sage-service
+spec:
+  selector:
+    app: kube-sage
+  ports:
+    - protocol: "TCP"
+      port: 5001       # External port
+      targetPort: 5000  # Port inside the container
+  type: LoadBalancer
+
+---
+# ==============================
+# Deployment - Run the Application
+# ==============================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-sage
+spec:
+  selector:
+    matchLabels:
+      app: kube-sage
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kube-sage
+    spec:
+      serviceAccountName: kubesage-sa  # 🔥 Use the custom ServiceAccount
+      containers:
+        - name: kube-sage
+          image: kube-sage:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
