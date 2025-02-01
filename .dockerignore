@@ -1,7 +1,7 @@
 .git
 .idea
 .dockerignore
-deployment.yaml
+deployment/deployment.yaml
 Dockerfile
 README.md
 LICENSE
