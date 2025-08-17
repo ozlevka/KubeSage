@@ -8,7 +8,8 @@ from src.k8s_utils import (
 from src.k8s_depth_utils import (
     describe_pod_with_restart_count, get_pod_logs, describe_service,
     describe_deployment, get_node_status_and_capacity, get_rbac_events_and_role_bindings,
-    get_persistent_volumes_and_claims, get_running_jobs_and_cronjobs, get_ingress_resources, check_pod_affinity
+    get_persistent_volumes_and_claims, get_running_jobs_and_cronjobs, get_ingress_resources, check_pod_affinity,
+    get_kubernetes_object_yaml
 )
 
 # Broad Insights Tools
@@ -131,6 +132,13 @@ deep_dive_tools = [
         name="Check Pod Affinity & Anti-Affinity",
         description="Analyzes the affinity and anti-affinity rules for a specific pod. (pass input as valid JSON)",
         func=lambda params: check_pod_affinity(
+            *parse_params(params)
+        ),
+    ),
+    Tool(
+        name="Get Kubernetes Object YAML",
+        description="Fetches the complete YAML representation of any Kubernetes object (pod, deployment, service, configmap, secret, etc.). Supports both namespaced and cluster-scoped resources. (pass input as valid JSON with resource_type, name, and optionally namespace)",
+        func=lambda params: get_kubernetes_object_yaml(
             *parse_params(params)
         ),
     ),

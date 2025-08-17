@@ -277,3 +277,87 @@ def check_pod_affinity(namespace: str, pod_name: str):
         return {"status": "error", "message": f"API error: {e.reason}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+def get_kubernetes_object_yaml(resource_type: str, name: str, namespace: str = "default") -> dict:
+    """
+    Fetches the YAML representation of any Kubernetes object.
+    
+    Args:
+        resource_type: Type of resource (pod, deployment, service, configmap, etc.)
+        name: Name of the resource
+        namespace: Namespace of the resource (default: "default")
+    
+    Returns:
+        dict: Status and YAML content of the Kubernetes object
+    """
+    try:
+        load_kube_config()
+        
+        # Map resource types to their API clients and methods
+        resource_map = {
+            'pod': {'client': client.CoreV1Api(), 'method': 'read_namespaced_pod'},
+            'service': {'client': client.CoreV1Api(), 'method': 'read_namespaced_service'},
+            'configmap': {'client': client.CoreV1Api(), 'method': 'read_namespaced_config_map'},
+            'secret': {'client': client.CoreV1Api(), 'method': 'read_namespaced_secret'},
+            'persistentvolume': {'client': client.CoreV1Api(), 'method': 'read_persistent_volume'},
+            'persistentvolumeclaim': {'client': client.CoreV1Api(), 'method': 'read_namespaced_persistent_volume_claim'},
+            'deployment': {'client': client.AppsV1Api(), 'method': 'read_namespaced_deployment'},
+            'replicaset': {'client': client.AppsV1Api(), 'method': 'read_namespaced_replica_set'},
+            'daemonset': {'client': client.AppsV1Api(), 'method': 'read_namespaced_daemon_set'},
+            'statefulset': {'client': client.AppsV1Api(), 'method': 'read_namespaced_stateful_set'},
+            'job': {'client': client.BatchV1Api(), 'method': 'read_namespaced_job'},
+            'cronjob': {'client': client.BatchV1Api(), 'method': 'read_namespaced_cron_job'},
+            'ingress': {'client': client.NetworkingV1Api(), 'method': 'read_namespaced_ingress'},
+            'networkpolicy': {'client': client.NetworkingV1Api(), 'method': 'read_namespaced_network_policy'},
+            'role': {'client': client.RbacAuthorizationV1Api(), 'method': 'read_namespaced_role'},
+            'rolebinding': {'client': client.RbacAuthorizationV1Api(), 'method': 'read_namespaced_role_binding'},
+            'clusterrole': {'client': client.RbacAuthorizationV1Api(), 'method': 'read_cluster_role'},
+            'clusterrolebinding': {'client': client.RbacAuthorizationV1Api(), 'method': 'read_cluster_role_binding'},
+            'serviceaccount': {'client': client.CoreV1Api(), 'method': 'read_namespaced_service_account'},
+            'node': {'client': client.CoreV1Api(), 'method': 'read_node'},
+        }
+        
+        resource_type_lower = resource_type.lower()
+        
+        if resource_type_lower not in resource_map:
+            return {
+                "status": "error", 
+                "message": f"Unsupported resource type: {resource_type}. Supported types: {', '.join(resource_map.keys())}"
+            }
+        
+        api_client = resource_map[resource_type_lower]['client']
+        method_name = resource_map[resource_type_lower]['method']
+        method = getattr(api_client, method_name)
+        
+        # Call the appropriate method based on resource type
+        if resource_type_lower in ['persistentvolume', 'node', 'clusterrole', 'clusterrolebinding']:
+            # Cluster-scoped resources don't need namespace
+            obj = method(name)
+        else:
+            # Namespaced resources
+            obj = method(name, namespace)
+        
+        # Convert to YAML
+        import yaml
+        yaml_content = yaml.dump(api_client.api_client.sanitize_for_serialization(obj), 
+                                default_flow_style=False, 
+                                allow_unicode=True)
+        
+        return {
+            "status": "success",
+            "resource_type": resource_type,
+            "name": name,
+            "namespace": namespace if resource_type_lower not in ['persistentvolume', 'node', 'clusterrole', 'clusterrolebinding'] else "cluster-scoped",
+            "yaml_content": yaml_content
+        }
+        
+    except client.exceptions.ApiException as e:
+        if e.status == 404:
+            return {
+                "status": "error", 
+                "message": f"{resource_type} '{name}' not found in namespace '{namespace}'"
+            }
+        return {"status": "error", "message": f"API error: {e.reason}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

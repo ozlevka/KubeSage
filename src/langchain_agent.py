@@ -90,6 +90,7 @@ def init_llm_and_executor(model_name: str = "openai/gpt-4o") -> None:
             - `"Get Running Jobs & CronJobs"` → Lists active Jobs & CronJobs.
             - `"Get Ingress Resources & Annotations"` → Lists Ingress rules, hosts, and annotations.
             - `"Check Pod Affinity & Anti-Affinity"` → Analyzes pod scheduling constraints.
+            - `"Get Kubernetes Object YAML"` → Fetches the complete YAML representation of any Kubernetes object (pod, deployment, service, configmap, secret, etc.)
 
             ---
 
@@ -107,6 +108,14 @@ def init_llm_and_executor(model_name: str = "openai/gpt-4o") -> None:
             3️⃣ **Step 2:** Use `"Describe Pod with Restart Count"` for specific failure reasons.
             4️⃣ **Step 3:** Use `"Get Pod Logs"` to analyze errors.
             5️⃣ **Step 4:** If node issues are suspected, use `"Get Node Status & Capacity"`.
+            6️⃣ **Step 5:** Provide an **actionable recommendation** based on tool outputs.
+
+            **🚀 Example Workflow for a Advenced Pod Issue:**
+            1️⃣ **User Query:** "Why is my app crashing?"
+            2️⃣ **Step 1:** Use `"Get All Pods with Resource Usage"` to identify failing pods.
+            3️⃣ **Step 2:** Use `"Describe Pod with Restart Count"` for specific failure reasons.
+            4️⃣ **Step 3:** Use `"Get Pod Logs"` to analyze errors.
+            5️⃣ **Step 4:** Use `"Get Kubernetes Object YAML"` to check if YAML is valid and no parameters are missed according to previous fetched logs.
             6️⃣ **Step 5:** Provide an **actionable recommendation** based on tool outputs.
 
             ---

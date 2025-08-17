@@ -6,7 +6,7 @@ from src.k8s_depth_utils import (
     describe_pod_with_restart_count, get_pod_logs, describe_service,
     describe_deployment, get_node_status_and_capacity, get_rbac_events_and_role_bindings,
     get_persistent_volumes_and_claims, get_running_jobs_and_cronjobs,
-    get_ingress_resources, check_pod_affinity
+    get_ingress_resources, check_pod_affinity, get_kubernetes_object_yaml
 )
 
 
@@ -142,6 +142,41 @@ class TestK8sDepthUtilsIntegration:
                 assert "namespace" in result
                 assert "affinity_details" in result
 
+    def test_get_kubernetes_object_yaml(self, skip_if_no_k8s, test_namespace):
+        """Test retrieving Kubernetes object YAML."""
+        # Try to get a real pod from the cluster
+        from src.k8s_utils import get_all_pods_with_usage
+        pods_result = get_all_pods_with_usage()
+        
+        if pods_result["status"] == "success" and pods_result["pods"]:
+            pod_name = pods_result["pods"][0]["name"]
+            namespace = pods_result["pods"][0]["namespace"]
+            
+            # Test getting pod YAML
+            result = get_kubernetes_object_yaml("pod", pod_name, namespace)
+            
+            assert "status" in result
+            if result["status"] == "success":
+                assert "resource_type" in result
+                assert "name" in result
+                assert "namespace" in result
+                assert "yaml_content" in result
+                assert result["resource_type"] == "pod"
+                assert result["name"] == pod_name
+                assert result["namespace"] == namespace
+                assert "apiVersion" in result["yaml_content"]
+                assert "kind: Pod" in result["yaml_content"]
+        
+        # Test with unsupported resource type
+        result = get_kubernetes_object_yaml("unsupported", "test", "default")
+        assert result["status"] == "error"
+        assert "Unsupported resource type" in result["message"]
+        
+        # Test with non-existent resource
+        result = get_kubernetes_object_yaml("pod", "non-existent-pod", "default")
+        assert result["status"] == "error"
+        assert "not found" in result["message"]
+
     def test_functions_return_proper_error_format(self):
         """Test that functions return proper error format when cluster unavailable."""
         functions_with_params = [
@@ -150,7 +185,8 @@ class TestK8sDepthUtilsIntegration:
             (describe_service, ["default", "test-service"]),
             (describe_deployment, ["default", "test-deployment"]),
             (get_node_status_and_capacity, ["test-node"]),
-            (check_pod_affinity, ["default", "test-pod"])
+            (check_pod_affinity, ["default", "test-pod"]),
+            (get_kubernetes_object_yaml, ["pod", "test-pod", "default"])
         ]
         
         functions_without_params = [
