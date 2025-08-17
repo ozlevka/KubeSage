@@ -77,35 +77,35 @@ deep_dive_tools = [
         name="Describe Pod with Restart Count",
         description="Fetches detailed pod info + restart count. (pass input as valid JSON)",
         func=lambda params: describe_pod_with_restart_count(
-            *parse_params(params)
+            **parse_params(params)
         ),
     ),
     Tool(
         name="Get Pod Logs",
         description="Fetches the last 10 log lines for a specific pod. (pass input as valid JSON)",
         func=lambda params: get_pod_logs(
-            *parse_params(params)
+            **parse_params(params)
         ),
     ),
     Tool(
         name="Describe Service",
         description="Fetches detailed information about a specific service. (pass input as valid JSON)",
         func=lambda params: describe_service(
-            *parse_params(params)
+            **parse_params(params)
         ),
     ),
     Tool(
         name="Describe Deployment",
         description="Fetches deployment details including replica count and container images. Takes namespace and deployment_name as inputs (pass input as valid JSON)",
         func=lambda params: describe_deployment(
-            *parse_params(params)
+            **parse_params(params)
         ),
     ),
     Tool(
         name="Get Node Status & Capacity",
         description="Fetches node health conditions and resource pressure. (pass input as valid JSON)",
         func=lambda params: get_node_status_and_capacity(
-            *parse_params(params)
+            **parse_params(params)
         ),
     ),
     Tool(
@@ -132,14 +132,14 @@ deep_dive_tools = [
         name="Check Pod Affinity & Anti-Affinity",
         description="Analyzes the affinity and anti-affinity rules for a specific pod. (pass input as valid JSON)",
         func=lambda params: check_pod_affinity(
-            *parse_params(params)
+            **parse_params(params)
         ),
     ),
     Tool(
         name="Get Kubernetes Object YAML",
         description="Fetches the complete YAML representation of any Kubernetes object (pod, deployment, service, configmap, secret, etc.). Supports both namespaced and cluster-scoped resources. (pass input as valid JSON with resource_type, name, and optionally namespace)",
         func=lambda params: get_kubernetes_object_yaml(
-            *parse_params(params)
+            **parse_params(params)
         ),
     ),
 ]
