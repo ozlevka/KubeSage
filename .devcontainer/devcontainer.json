@@ -1,0 +1,39 @@
+{
+  "name": "KubeSage Development Environment",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-kubernetes-tools.vscode-kubernetes-tools"
+      ],
+      "settings": {
+          "terminal.integrated.profiles.linux": {
+					"fish": {
+						"path": "/usr/bin/fish",
+						"args": ["-l"]
+					}
+				},
+      }
+    }
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [5000],
+
+  // Configure tool-specific properties.
+  "mounts": [
+    "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached"
+  ],
+
+  // Set `remoteUser` to `root` to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash -c 'git config --global pull.rebase false && git config --global user.name \"Lev\" && git config --global user.email \"ozlevka@gmail.com\"' && git config --global safe.directory '*'",
+	"portsAttributes": {},
+	"shutdownAction": "stopContainer"
+}

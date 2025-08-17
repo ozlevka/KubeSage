@@ -1,15 +1,15 @@
 import traceback
 from fastapi import WebSocket
 from openai import RateLimitError, AuthenticationError
-from src.langchain_agent import process_query, set_openai_key
+from src.langchain_agent import process_query, init_llm_and_executor
 
 
 async def websocket_handler(websocket: WebSocket):
     """WebSocket for real-time Kubernetes AI chatbot."""
     await websocket.accept()
-    await websocket.send_text("🔹 Kubernetes Chat Assistant Started! Please enter your OpenAI API key.")
+    await websocket.send_text("🔹 Kubernetes Chat Assistant Started! Using OPENROUTER_API_KEY from environment.")
 
-    api_key_set = False
+    initialized = False
 
     while True:
         query = await websocket.receive_text()
@@ -18,14 +18,18 @@ async def websocket_handler(websocket: WebSocket):
             await websocket.send_text("❌ Closing connection.")
             break
 
-        if not api_key_set:
+        if not initialized:
             try:
-                set_openai_key(query)
-                api_key_set = True
-                await websocket.send_text("✅ API Key successfully set! You can now ask questions.")
+                init_llm_and_executor()
+                initialized = True
+                await websocket.send_text("✅ LLM initialized! You can now ask questions.")
+            except ValueError as e:
+                await websocket.send_text(f"❌ Configuration error: {str(e)}")
+                await websocket.send_text("Type 'exit' to quit.")
                 continue
             except AuthenticationError:
-                await websocket.send_text("❌ Invalid API Key! Please try again or type 'exit' to quit.")
+                await websocket.send_text("❌ Invalid API Key! Please check your OPENROUTER_API_KEY environment variable.")
+                await websocket.send_text("Type 'exit' to quit.")
                 continue
             except RateLimitError:
                 await websocket.send_text("⚠️ You exceeded your quota, please check your plan and billing details.")
@@ -37,7 +41,12 @@ async def websocket_handler(websocket: WebSocket):
                 await websocket.send_text(error_message)
                 continue
 
-        response = process_query(query)
-        await websocket.send_text(str(response.get('output')))
+        try:
+            response = process_query(query)
+            await websocket.send_text(str(response.get('output')))
+        except Exception as e:
+            error_message = f"❌ Query processing error: {str(e)}"
+            print(traceback.format_exc())
+            await websocket.send_text(error_message)
 
     await websocket.close()

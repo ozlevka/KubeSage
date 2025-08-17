@@ -5,7 +5,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kubesage-sa
-  namespace: default
+  namespace: kube-sage
 
 ---
 # ==============================
@@ -34,7 +34,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: kubesage-sa
-    namespace: default
+    namespace: kube-sage
 roleRef:
   kind: ClusterRole
   name: kubesage-role
@@ -53,9 +53,9 @@ spec:
     app: kube-sage
   ports:
     - protocol: "TCP"
-      port: 5001       # External port
+      port: 5000      # External port
       targetPort: 5000  # Port inside the container
-  type: LoadBalancer
+  type: ClusterIP
 
 ---
 # ==============================
@@ -78,7 +78,7 @@ spec:
       serviceAccountName: kubesage-sa  # 🔥 Use the custom ServiceAccount
       containers:
         - name: kube-sage
-          image: kube-sage:latest
-          imagePullPolicy: Never
+          image: ghcr.io/ozlevka/kube-sage@sha256:8e97cfc9d9cd538b63669748c935fddce52cd0a0c9760f1439731174f07022c2
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000

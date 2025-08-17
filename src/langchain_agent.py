@@ -1,3 +1,4 @@
+import os
 from langchain.agents import initialize_agent
 from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
@@ -8,28 +9,44 @@ from src.langchain_tools import broad_insights_tools, deep_dive_tools
 
 llm = None
 agent_executor = None
+current_model = None
 
 
-def set_openai_key(api_key: str) -> None:
+def init_llm_and_executor(model_name: str = "openai/gpt-4o") -> None:
     """
-    Sets the OpenAI API Key, initializes the LangChain agent, and runs an initial test query.
+    Initializes the LangChain agent with OpenRouter.ai API and runs an initial test query.
+
+    Args:
+        model_name: The model name to use (default: openai/gpt-4o)
 
     Raises:
         AuthenticationError: If the API key is invalid.
-        RateLimitError: If OpenAI usage limits are exceeded.
+        RateLimitError: If OpenRouter usage limits are exceeded.
         Exception: For any other unexpected errors.
     """
-    global llm, agent_executor
+    global llm, agent_executor, current_model
 
-    # Initialize LLM with the new API key
-    model_name = "chatgpt-4o-latest"
-    llm = ChatOpenAI(model_name=model_name, openai_api_key=api_key)
+    # Get API key from environment variable
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable is not set")
+
+    # Initialize LLM with OpenRouter.ai configuration
+    llm = ChatOpenAI(
+        model_name=model_name,
+        openai_api_key=api_key,
+        openai_api_base="https://openrouter.ai/api/v1",
+    )
 
     try:
         llm.invoke("Hi, this is a test query")
     except NotFoundError as e:
-        print(f"{model_name} doesn't exist, using gpt-4o-mini instead")
-        llm = ChatOpenAI(model_name="gpt-4o-mini", openai_api_key=api_key)
+        print(f"{model_name} doesn't exist, using openai/gpt-4o-mini instead")
+        llm = ChatOpenAI(
+            model_name="openai/gpt-4o-mini",
+            openai_api_key=api_key,
+            openai_api_base="https://openrouter.ai/api/v1",
+        )
         llm.invoke("Hi, this is a test query")
 
     # Define a Prompt Template for guiding the agent
@@ -111,10 +128,16 @@ def set_openai_key(api_key: str) -> None:
         prompt=prompt_template,
         handle_parsing_errors=True
     )
+    
+    # Store the current model name
+    current_model = model_name
 
-def process_query(user_query: str):
+def process_query(user_query: str, model_name: str = "openai/gpt-4o"):
     """Process natural language queries and fetch Kubernetes data via LangChain."""
-    if agent_executor is None:
-        return {"status": "error", "message": "API Key not set. Please provide a valid OpenAI API key first."}
-
+    global current_model
+    
+    # Initialize if not done yet, or reinitialize if model changed
+    if agent_executor is None or current_model != model_name:
+        init_llm_and_executor(model_name)
+    
     return agent_executor.invoke(user_query)
