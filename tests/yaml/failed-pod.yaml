@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crashloop-busybox
+  namespace: default
+  labels:
+    app: crashloop-busybox
+spec:
+  restartPolicy: Always
+  containers:
+    - name: busybox
+      image: blabla:test
+      command:
+        - sh
+        - -c
+        - |
+          echo "Starting and exiting with failure...";
+          sleep 2;
+          exit 1
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      # Optional: make the loop faster to observe failures
+      livenessProbe:
+        exec:
+          command: ["true"]
+        initialDelaySeconds: 3
+        periodSeconds: 5

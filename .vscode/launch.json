@@ -27,7 +27,9 @@
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env",
             "env": {
-                "PYTHONPATH": "${workspaceFolder}"
+                "PYTHONPATH": "${workspaceFolder}",
+                "LM_STUDIO_BASE_URL": "http://192.168.68.118:1234/v1",
+                "LLM_PROVIDER": "lmstudio"
             },
             "python": "python"
         },

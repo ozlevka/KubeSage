@@ -26,33 +26,66 @@ def init_llm_and_executor(model_name: str = "openai/gpt-4o") -> None:
     """
     global llm, agent_executor, current_model
 
-    # Get API key from environment variable
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY environment variable is not set")
+    # Decide provider: OpenRouter (default) or LM Studio local server
+    provider = os.getenv("LLM_PROVIDER", "openrouter").strip().lower()
 
-    # Initialize LLM with OpenRouter.ai configuration
-    llm = ChatOpenAI(
-        model_name=model_name,
-        openai_api_key=api_key,
-        openai_api_base="https://openrouter.ai/api/v1",
-    )
+    if provider == "lmstudio":
+        # LM Studio runs an OpenAI-compatible server locally, typically at http://localhost:1234/v1
+        base_url = os.getenv("LM_STUDIO_BASE_URL", "http://localhost:1234/v1")
+        # LM Studio usually accepts any API key string; provide a default placeholder
+        api_key = ""
+
+        llm = ChatOpenAI(
+            model_name=model_name,
+            openai_api_key=api_key,
+            openai_api_base=base_url,
+        )
+    else:
+        # Default to OpenRouter
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is not set")
+
+        llm = ChatOpenAI(
+            model_name=model_name,
+            openai_api_key=api_key,
+            openai_api_base="https://openrouter.ai/api/v1",
+        )
 
     try:
         llm.invoke("Hi, this is a test query")
     except NotFoundError as e:
-        print(f"{model_name} doesn't exist, using openai/gpt-4o-mini instead")
-        llm = ChatOpenAI(
-            model_name="openai/gpt-4o-mini",
-            openai_api_key=api_key,
-            openai_api_base="https://openrouter.ai/api/v1",
-        )
-        llm.invoke("Hi, this is a test query")
+        # Only attempt OpenRouter fallback if using OpenRouter
+        if os.getenv("LLM_PROVIDER", "openrouter").strip().lower() != "lmstudio":
+            print(f"{model_name} doesn't exist, using openai/gpt-4o-mini instead")
+            llm = ChatOpenAI(
+                model_name="openai/gpt-4o-mini",
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
+                openai_api_base="https://openrouter.ai/api/v1",
+            )
+            llm.invoke("Hi, this is a test query")
+        else:
+            # For LM Studio, surface the error (model likely not loaded or name mismatch)
+            raise
 
-    # Define a Prompt Template for guiding the agent
-    prompt_template = PromptTemplate(
-        input_variables=["input"],
-        template="""
+    # Build prompt text dynamically to optionally include formatting rules for LM Studio
+    rules_block = (
+        """
+            
+            IMPORTANT FORMATTING RULES:
+            - Always include "Thought:" before reasoning
+            - Always include "Action:" before tool name  
+            - Always include "Action Input:" before parameters
+            - When you have a final answer, use: Final Answer: [your answer]
+            
+            ---
+            
+        """
+        if provider == "lmstudio" else ""
+    )
+
+    prompt_text = (
+        """
             You are an **AI Kubernetes Troubleshooting Assistant**.
 
             🔹 **You have access to two categories of tools**:
@@ -71,26 +104,26 @@ def init_llm_and_executor(model_name: str = "openai/gpt-4o") -> None:
             **🔹 Available Tools:**
 
             🟢 **Broad Insights Tools**
-            - `"Get All Pods with Resource Usage"` → Lists all pods with CPU & Memory usage.
-            - `"Get All Services"` → Lists all services with their types and ports.
-            - `"Get All Deployments"` → Lists deployments with replica status.
-            - `"Get All Nodes"` → Lists nodes with their health & capacity.
-            - `"Get All Endpoints"` → Fetches endpoints and associated services.
-            - `"Get Cluster Events"` → Lists recent cluster-wide warnings & failures.
-            - `"Get Namespace List"` → Lists all namespaces and their statuses.
+            - "Get All Pods with Resource Usage" → Lists all pods with CPU & Memory usage.
+            - "Get All Services" → Lists all services with their types and ports.
+            - "Get All Deployments" → Lists deployments with replica status.
+            - "Get All Nodes" → Lists nodes with their health & capacity.
+            - "Get All Endpoints" → Fetches endpoints and associated services.
+            - "Get Cluster Events" → Lists recent cluster-wide warnings & failures.
+            - "Get Namespace List" → Lists all namespaces and their statuses.
 
             🔵 **Deep Dive Tools**
-            - `"Describe Pod with Restart Count"` → Fetches detailed pod info + restart count.
-            - `"Get Pod Logs"` → Fetches the last 10 log lines for a specific pod.
-            - `"Describe Service"` → Fetches service details (ClusterIP, NodePort, ExternalName).
-            - `"Describe Deployment"` → Fetches replica counts & container images.
-            - `"Get Node Status & Capacity"` → Fetches node health conditions & resource usage.
-            - `"Check RBAC Events & Role Bindings"` → Fetches RBAC security events & role bindings.
-            - `"Get Persistent Volumes & Claims"` → Lists PVs, PVCs, and their bound claims.
-            - `"Get Running Jobs & CronJobs"` → Lists active Jobs & CronJobs.
-            - `"Get Ingress Resources & Annotations"` → Lists Ingress rules, hosts, and annotations.
-            - `"Check Pod Affinity & Anti-Affinity"` → Analyzes pod scheduling constraints.
-            - `"Get Kubernetes Object YAML"` → Fetches the complete YAML representation of any Kubernetes object (pod, deployment, service, configmap, secret, etc.)
+            - "Describe Pod with Restart Count" → Fetches detailed pod info + restart count.
+            - "Get Pod Logs" → Fetches the last 10 log lines for a specific pod.
+            - "Describe Service" → Fetches service details (ClusterIP, NodePort, ExternalName).
+            - "Describe Deployment" → Fetches replica counts & container images.
+            - "Get Node Status & Capacity" → Fetches node health conditions & resource usage.
+            - "Check RBAC Events & Role Bindings" → Fetches RBAC security events & role bindings.
+            - "Get Persistent Volumes & Claims" → Lists PVs, PVCs, and their bound claims.
+            - "Get Running Jobs & CronJobs" → Lists active Jobs & CronJobs.
+            - "Get Ingress Resources & Annotations" → Lists Ingress rules, hosts, and annotations.
+            - "Check Pod Affinity & Anti-Affinity" → Analyzes pod scheduling constraints.
+            - "Get Kubernetes Object YAML" → Fetches the complete YAML representation of any Kubernetes object (pod, deployment, service, configmap, secret, etc.)
 
             ---
 
@@ -104,24 +137,30 @@ def init_llm_and_executor(model_name: str = "openai/gpt-4o") -> None:
 
             **🚀 Example Workflow for a Pod Issue:**
             1️⃣ **User Query:** "Why is my app crashing?"
-            2️⃣ **Step 1:** Use `"Get All Pods with Resource Usage"` to identify failing pods.
-            3️⃣ **Step 2:** Use `"Describe Pod with Restart Count"` for specific failure reasons.
-            4️⃣ **Step 3:** Use `"Get Pod Logs"` to analyze errors.
-            5️⃣ **Step 4:** If node issues are suspected, use `"Get Node Status & Capacity"`.
+            2️⃣ **Step 1:** Use "Get All Pods with Resource Usage" to identify failing pods.
+            3️⃣ **Step 2:** Use "Describe Pod with Restart Count" for specific failure reasons.
+            4️⃣ **Step 3:** Use "Get Pod Logs" to analyze errors.
+            5️⃣ **Step 4:** If node issues are suspected, use "Get Node Status & Capacity".
             6️⃣ **Step 5:** Provide an **actionable recommendation** based on tool outputs.
 
             **🚀 Example Workflow for a Advenced Pod Issue:**
             1️⃣ **User Query:** "Why is my app crashing?"
-            2️⃣ **Step 1:** Use `"Get All Pods with Resource Usage"` to identify failing pods.
-            3️⃣ **Step 2:** Use `"Describe Pod with Restart Count"` for specific failure reasons.
-            4️⃣ **Step 3:** Use `"Get Pod Logs"` to analyze errors.
-            5️⃣ **Step 4:** Use `"Get Kubernetes Object YAML"` to check if YAML is valid and no parameters are missed according to previous fetched logs.
+            2️⃣ **Step 1:** Use "Get All Pods with Resource Usage" to identify failing pods.
+            3️⃣ **Step 2:** Use "Describe Pod with Restart Count" for specific failure reasons.
+            4️⃣ **Step 3:** Use "Get Pod Logs" to analyze errors.
+            5️⃣ **Step 4:** Use "Get Kubernetes Object YAML" to check if YAML is valid and no parameters are missed according to previous fetched logs.
             6️⃣ **Step 5:** Provide an **actionable recommendation** based on tool outputs.
-
-            ---
-
+        """
+        + rules_block
+        + """
             **🔹 User Query:** {input}
             """
+    )
+
+    # Define a Prompt Template for guiding the agent
+    prompt_template = PromptTemplate(
+        input_variables=["input"],
+        template=prompt_text,
     )
 
     # Conversation memory to maintain context
